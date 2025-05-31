@@ -1,118 +1,65 @@
 const bcrypt = require('bcryptjs');
-const jwt = require('jsonwebtoken');
 const User = require('../models/user');
-
-const sequelize = require("../config/db");
 const jwtServices = require("../services/jwtService");
 
+// Signup
 exports.signUp = async (req, res) => {
-    const t = await sequelize.transaction();
-    const name = req.body.name;
-    const email = req.body.email;
-    const phone = req.body.phone;
-    const password = req.body.password;
-    try {
-        const user = await User.findOne({
-            where: { email: email },
-            transaction: t,
-        });
-        if (user === null) {
-            const saltRounds = 10;
-            bcrypt.hash(password, saltRounds, async (err, hash) => {
-                if (err) {
-                    console.log(err);
-                }
-                await User.create(
-                    {
-                        name: name,
-                        email: email,
-                        phone: phone,
-                        password: hash,
-                    },
-                    { transaction: t }
-                );
-                await t.commit();
-                res.status(201).json({
-                    success: true,
-                    message: "New user created.",
-                });
-            });
-        } else {
-            res.status(403).json({
-                message: "User already exists, Please login!",
-            });
-        }
-    } catch (err) {
-        await t.rollback();
-        res.status(500).json(err);
-    }
-};
-
-exports.logIn = async (req, res) => {
-    const email = req.body.email;
-    const password = req.body.password;
-
-    try {
-        const user = await User.findOne({ where: { email } });
-        if (!user) {
-            return res.status(404).json({ error: 'User not found' });
-        }
-
-        const isPasswordValid = await bcrypt.compare(password, user.password);
-        if (!isPasswordValid) {
-            return res.status(401).json({ error: 'Invalid password' });
-        }
-
-        const token = jwtServices.generateAccessTokenOnLogin(user.id, user.name); // Generate token
-        res.status(200).json({
-            message: 'Login successful',
-            token,
-            userId: user.id,
-            userName: user.name,
-        });
-    } catch (err) {
-        console.error(err);
-        res.status(500).json({ error: 'Internal server error' });
-    }
-};
-
-exports.updateProfile = async (req, res) => {
-  const { name, street, apartment, zip, city, country } = req.body;
-
+  const { name, email, phone, password } = req.body;
   try {
-    const user = await User.findByPk(req.user.userId); // Ensure req.user.userId is used
-    if (!user) {
-      return res.status(404).json({ error: 'User not found' }); // Handle case where user is not found
+    const existingUser = await User.findByEmail(email);
+    if (existingUser) {
+      return res.status(403).json({ message: "User already exists, Please login!" });
     }
-
-    user.name = name;
-    user.street = street;
-    user.apartment = apartment;
-    user.zip = zip;
-    user.city = city;
-    user.country = country;
+    const hash = await bcrypt.hash(password, 10);
+    const user = new User(name, email, hash, phone);
     await user.save();
-
-    res.status(200).json({ message: 'Profile updated successfully', user });
+    res.status(201).json({ success: true, message: "New user created." });
   } catch (err) {
-    console.error(err);
+    res.status(500).json({ error: err.message });
+  }
+};
+
+// Login
+exports.logIn = async (req, res) => {
+  const { email, password } = req.body;
+  try {
+    const user = await User.findByEmail(email);
+    if (!user) return res.status(404).json({ error: 'User not found' });
+    const isPasswordValid = await bcrypt.compare(password, user.password);
+    if (!isPasswordValid) return res.status(401).json({ error: 'Invalid password' });
+    const token = jwtServices.generateAccessTokenOnLogin(user._id, user.name);
+    res.status(200).json({
+      message: 'Login successful',
+      token,
+      userId: user._id,
+      userName: user.name,
+    });
+  } catch (err) {
+    res.status(500).json({ error: 'Internal server error' });
+  }
+};
+
+// Update Profile
+exports.updateProfile = async (req, res) => {
+  const { name, street, apartment, zip, city, country, careerGoals } = req.body;
+  try {
+    const updateFields = { name, street, apartment, zip, city, country };
+    if (careerGoals !== undefined) updateFields.careerGoals = careerGoals;
+    const result = await User.updateProfile(req.user.userId, updateFields);
+    if (!result.value) return res.status(404).json({ error: 'User not found' });
+    res.status(200).json({ message: 'Profile updated successfully', user: result.value });
+  } catch (err) {
     res.status(500).json({ error: 'Failed to update profile' });
   }
 };
 
+// Get Profile
 exports.getProfile = async (req, res) => {
-  try{
-    const user = await User.findByPk(req.user.userId, {
-      attributes: ['name', 'email', 'phone', 'street', 'apartment', 'zip', 'city', 'country'],
-    });
-
-    if (!user) {
-      return res.status(404).json({ error: 'User not found' });
-    }
-
+  try {
+    const user = await User.findById(req.user.userId);
+    if (!user) return res.status(404).json({ error: 'User not found' });
     res.status(200).json(user);
   } catch (err) {
-    console.error(err);
     res.status(500).json({ error: 'Failed to fetch user profile' });
   }
 };

@@ -10,7 +10,7 @@ const upload = multer({ dest: 'uploads/' }); // Store files in 'uploads/' direct
 router.post('/', authMiddleware, applicationController.logApplication);
 
 // Fetch all applications
-router.get('/', authMiddleware, applicationController.getApplications);
+router.get('/', authMiddleware, applicationController.getApplications); // Ensure this route is defined
 
 // Fetch a specific application
 router.get('/:id', authMiddleware, applicationController.getApplication);

@@ -1,21 +1,33 @@
-const { DataTypes } = require('sequelize');
-const sequelize = require('../config/db');
-const Application = require('./application');
+const getdb = require('../config/db').getdb;
 
-const Note = sequelize.define('Note', {
-  content: {
-    type: DataTypes.TEXT,
-    allowNull: false,
-  },
-  applicationId: {
-    type: DataTypes.INTEGER,
-    references: {
-      model: Application,
-      key: 'id',
-    },
-  },
-}, {
-  timestamps: true,
-});
+class Note {
+  constructor(content, applicationId) {
+    this.content = content;
+    this.applicationId = applicationId;
+  }
 
-module.exports = Note;
+  async save() {
+    const db = getdb();
+    try {
+      const result = await db.collection('notes').insertOne(this);
+      return result.ops?.[0] || { insertedId: result.insertedId, ...this };
+    } catch (err) {
+      console.error('Error saving note:', err.message);
+      throw err;
+    }
+  }
+
+  static async findByApplicationId(applicationId) {
+    const db = getdb();
+    try {
+      const notes = await db.collection('notes').find({ applicationId }).toArray();
+      return notes;
+    } catch (err) {
+      console.error('Error fetching notes by application ID:', err.message);
+      throw err;
+    }
+  }
+}
+
+
+ module.exports = Note;

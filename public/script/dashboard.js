@@ -5,7 +5,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const companyModalElement = document.getElementById('company-modal');
     const reminderModalElement = document.getElementById('reminder-modal');
     const applicationModalElement = document.getElementById('application-modal');
-    const addApplicationForm = document.getElementById('add-application-form'); // Ensure this element exists
+    // const addApplicationForm = document.getElementById('add-application-form'); // Ensure this element exists
     const selectedCompanyIdInput = document.getElementById('selected-company-id'); // Ensure this element exists
 
     // Ensure modal elements exist before initializing them
@@ -42,69 +42,34 @@ document.addEventListener('DOMContentLoaded', async () => {
     const applicationDateInput = document.getElementById('application-date');
     const statusInput = document.getElementById('status');
     const notesInput = document.getElementById('notes');
-    const companyDropdown = document.getElementById('company-id');
 
     let statsChartInstance; // Declare a variable to store the chart instance
 
-    document.getElementById('add-application-btn').addEventListener('click', () => {
-        jobTitleInput.value = '';
-        applicationDateInput.value = '';
-        statusInput.value = 'applied';
-        notesInput.value = '';
-        companyDropdown.value = ''; // Reset the input field for manual company ID entry
-        applicationModal.show();
+    // Fix aria-hidden warning by ensuring modal focus management
+    applicationModalElement.addEventListener('hidden.bs.modal', () => {
+        // Remove focus from any element inside the modal
+        if (document.activeElement && applicationModalElement.contains(document.activeElement)) {
+            document.activeElement.blur();
+        }
     });
 
-    // Expose the openAddApplicationModal function to the global scope
-    window.openAddApplicationModal = async (companyId) => {
-        jobTitleInput.value = '';
-        applicationDateInput.value = '';
-        statusInput.value = 'applied';
-        notesInput.value = '';
-        companyDropdown.value = companyId; // Pre-select the company in the dropdown
+    // Ensure proper initialization of the modal
+    try {
+        applicationModal = new bootstrap.Modal(applicationModalElement, {
+            backdrop: 'static', // Prevent closing the modal by clicking outside
+            keyboard: true,     // Allow closing the modal with the Escape key
+        });
+    } catch (error) {
+        console.error('Error initializing application modal:', error.message);
+        return;
+    }
 
-        applicationModal.show();
-    };
-
-    applicationForm.addEventListener('submit', async (e) => {
-        e.preventDefault();
-
-        const formData = {
-            jobTitle: jobTitleInput.value.trim(),
-            applicationDate: applicationDateInput.value.trim(),
-            status: statusInput.value.trim(),
-            notes: notesInput.value.trim(),
-            companyId: companyIdInput.value.trim(), // Use the manual input field for companyId
-        };
-
-        console.log('Form data being sent:', formData); // Debugging log
-
-        if (!formData.companyId) {
-            alert('Company ID is required.');
-            return;
-        }
-
-        try {
-            const response = await fetch('/api/v1/applications', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${localStorage.getItem('token')}`,
-                },
-                body: JSON.stringify(formData), // Ensure the body is sent as JSON
-            });
-
-            if (!response.ok) {
-                const errorData = await response.json();
-                throw new Error(errorData.error || 'Failed to save application');
-            }
-
-            alert('Application saved successfully');
-            applicationModal.hide();
-            loadApplications(); // Reload applications if needed
-        } catch (err) {
-            console.error('Error saving application:', err.message);
-            alert('Error saving application: ' + err.message);
+    // Fix aria-hidden warning by ensuring modal focus management
+    applicationModalElement.addEventListener('hidden.bs.modal', () => {
+        // Move focus to the "Add Application" button when the modal is closed
+        const addApplicationBtn = document.getElementById('add-application-btn');
+        if (addApplicationBtn) {
+            addApplicationBtn.focus();
         }
     });
 
@@ -123,35 +88,45 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         const { stats } = await statsResponse.json();
         dashboardStats.innerHTML = `
-            <div class="col-md-3">
-                <div class="card text-white bg-primary mb-3">
-                    <div class="card-body">
-                        <h5 class="card-title">Total Applications</h5>
-                        <p class="card-text">${stats.totalApplications}</p>
+            <div class="row">
+                <div class="col-md-2">
+                    <div class="card text-white" style="background-color:hsl(192, 88.60%, 37.80%);"> <!-- Light blue for Total Applications -->
+                        <div class="card-body">
+                            <h5 class="card-title">Total Applications</h5>
+                            <p class="card-text">${stats.totalApplications}</p>
+                        </div>
                     </div>
                 </div>
-            </div>
-            <div class="col-md-3">
-                <div class="card text-white bg-success mb-3">
-                    <div class="card-body">
-                        <h5 class="card-title">Applied</h5>
-                        <p class="card-text">${stats.applied}</p>
+                <div class="col-md-2">
+                    <div class="card text-white" style="background-color: #007bff;"> <!-- Blue for Applied -->
+                        <div class="card-body">
+                            <h5 class="card-title">Applied</h5>
+                            <p class="card-text">${stats.applied}</p>
+                        </div>
                     </div>
                 </div>
-            </div>
-            <div class="col-md-3">
-                <div class="card text-white bg-warning mb-3">
-                    <div class="card-body">
-                        <h5 class="card-title">Interviewed</h5>
-                        <p class="card-text">${stats.interviewed}</p>
+                <div class="col-md-2">
+                    <div class="card text-white" style="background-color: #ffc107;"> <!-- Yellow for Interviewed -->
+                        <div class="card-body">
+                            <h5 class="card-title">Interviewed</h5>
+                            <p class="card-text">${stats.interviewed}</p>
+                        </div>
                     </div>
                 </div>
-            </div>
-            <div class="col-md-3">
-                <div class="card text-white bg-danger mb-3">
-                    <div class="card-body">
-                        <h5 class="card-title">Rejected</h5>
-                        <p class="card-text">${stats.rejected}</p>
+                <div class="col-md-2">
+                    <div class="card text-white" style="background-color: #28a745;"> <!-- Green for Offered -->
+                        <div class="card-body">
+                            <h5 class="card-title">Offered</h5>
+                            <p class="card-text">${stats.offered}</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-2">
+                    <div class="card text-white" style="background-color: #dc3545;"> <!-- Red for Rejected -->
+                        <div class="card-body">
+                            <h5 class="card-title">Rejected</h5>
+                            <p class="card-text">${stats.rejected}</p>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -186,8 +161,8 @@ document.addEventListener('DOMContentLoaded', async () => {
                     <td>${company.industry}</td>
                     <td>${company.notes}</td>
                     <td>
-                        <button class="btn btn-warning btn-sm" onclick="editCompany(${company.id})">Edit</button>
-                        <button class="btn btn-danger btn-sm" onclick="deleteCompany(${company.id})">Delete</button>
+                        <button class="btn btn-warning btn-sm" onclick="editCompany('${company._id}')">Edit</button>
+                        <button class="btn btn-danger btn-sm" onclick="deleteCompany('${company._id}')">Delete</button>
                     </td>
                 </tr>
             `).join('');
@@ -200,7 +175,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     companyForm.addEventListener('submit', async (e) => {
         e.preventDefault();
 
-        const id = companyIdInput.value;
+        const _id = companyIdInput.value;
         const name = companyNameInput.value;
         const contactDetails = companyContactInput.value;
         const size = companySizeInput.value;
@@ -208,8 +183,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         const notes = companyNotesInput.value;
 
         try {
-            const method = id ? 'PUT' : 'POST';
-            const url = id ? `/api/v1/companies/${id}` : '/api/v1/companies';
+            const method = _id ? 'PUT' : 'POST';
+            const url = _id ? `/api/v1/companies/${_id}` : '/api/v1/companies';
 
             const response = await fetch(url, {
                 method,
@@ -234,9 +209,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
 
     // Edit Company
-    window.editCompany = async (id) => {
+    window.editCompany = async (_id) => {
         try {
-            const response = await fetch(`/api/v1/companies/${id}`, {
+            const response = await fetch(`/api/v1/companies/${_id}`, {
                 method: 'GET',
                 headers: {
                     'Authorization': `Bearer ${localStorage.getItem('token')}`, // Include token
@@ -248,7 +223,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             }
 
             const company = await response.json();
-            companyIdInput.value = company.id;
+            companyIdInput.value = company._id;
             companyNameInput.value = company.name;
             companyContactInput.value = company.contactDetails;
             companySizeInput.value = company.size;
@@ -263,13 +238,13 @@ document.addEventListener('DOMContentLoaded', async () => {
     };
 
     // Delete Company
-    window.deleteCompany = async (id) => {
+    window.deleteCompany = async (_id) => {
         if (!confirm('Are you sure you want to delete this company?')) {
             return;
         }
 
         try {
-            const response = await fetch(`/api/v1/companies/${id}`, {
+            const response = await fetch(`/api/v1/companies/${_id}`, {
                 method: 'DELETE',
                 headers: {
                     'Authorization': `Bearer ${localStorage.getItem('token')}`, // Include token
@@ -371,14 +346,17 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
 
     // Delete Reminder
-    window.deleteReminder = async (id) => {
+    window.deleteReminder = async (_id) => {
         if (!confirm('Are you sure you want to delete this reminder?')) {
             return;
         }
 
         try {
-            const response = await fetch(`/api/v1/reminders/${id}`, {
+            const response = await fetch(`/api/v1/reminders/${_id}`, {
                 method: 'DELETE',
+                headers: {
+                    'Authorization': `Bearer ${localStorage.getItem('token')}`, // Include token in the request
+                },
             });
 
             if (!response.ok) {
@@ -386,10 +364,10 @@ document.addEventListener('DOMContentLoaded', async () => {
             }
 
             alert('Reminder deleted successfully');
-            loadReminders();
+            loadReminders(); // Reload reminders after successful deletion
         } catch (err) {
-            console.error(err.message);
-            alert('Error deleting reminder');
+            console.error('Failed to delete reminder:', err.message);
+            alert('Error deleting reminder: ' + err.message);
         }
     };
 
@@ -420,7 +398,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
             // Populate the dropdown with valid application IDs
             applicationIdInput.innerHTML = applications.map(app => `
-                <option value="${app.id}">(ID: ${app.id})</option>
+                <option value="${app._id}">(ID: ${app._id})</option>
             `).join('');
         } catch (err) {
             console.error(err.message);
@@ -484,27 +462,50 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Call loadApplicationStats on page load
     loadApplicationStats();
 
-    // Handle application form submission
-    applicationForm.addEventListener('submit', async (e) => {
-        e.preventDefault();
+    // Call this function when opening the "Add Application" modal
+    document.getElementById('add-application-btn').addEventListener('click', () => {
+        jobTitleInput.value = '';
+        applicationDateInput.value = '';
+        statusInput.value = 'applied';
+        notesInput.value = '';
+        applicationModal.show();
+    });
 
-        const formData = new FormData();
-        formData.append('jobTitle', jobTitleInput.value.trim());
-        formData.append('applicationDate', applicationDateInput.value.trim());
-        formData.append('status', statusInput.value.trim());
-        formData.append('notes', notesInput.value.trim());
-        formData.append('companyId', companyDropdown.value.trim());
-        if (document.getElementById('attachment').files[0]) {
-            formData.append('attachment', document.getElementById('attachment').files[0]);
+    let isSubmitting = false; // Prevent duplicate submissions
+
+    // Ensure the "Add Application" form is responding
+    applicationForm.addEventListener('submit', async (e) => {
+        e.preventDefault(); // Prevent the default form submission behavior
+
+        if (isSubmitting) {
+            console.warn('Form is already being submitted. Please wait.');
+            return; // Prevent duplicate submissions
+        }
+
+        isSubmitting = true; // Set the flag to true to indicate submission is in progress
+
+        const formData = {
+            jobTitle: jobTitleInput.value.trim(),
+            applicationDate: applicationDateInput.value.trim(),
+            status: statusInput.value.trim(),
+            notes: notesInput.value.trim(),
+        };
+
+        // Validate required fields
+        if (!formData.jobTitle || !formData.applicationDate || !formData.status) {
+            alert('All fields are required.');
+            isSubmitting = false; // Reset the flag
+            return;
         }
 
         try {
             const response = await fetch('/api/v1/applications', {
                 method: 'POST',
                 headers: {
-                    'Authorization': `Bearer ${localStorage.getItem('token')}`,
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${localStorage.getItem('token')}`, // Include token
                 },
-                body: formData,
+                body: JSON.stringify(formData), // Send the form data as JSON
             });
 
             if (!response.ok) {
@@ -513,166 +514,20 @@ document.addEventListener('DOMContentLoaded', async () => {
             }
 
             alert('Application saved successfully');
-            applicationModal.hide();
-            loadApplications(); // Reload applications if needed
+            applicationModal.hide(); // Hide the modal after successful submission
+            loadApplications(); // Reload the applications list
         } catch (err) {
             console.error('Error saving application:', err.message);
             alert('Error saving application: ' + err.message);
+        } finally {
+            isSubmitting = false; // Reset the flag after submission is complete
         }
     });
-
-    // Reference to the "Add Application" modal and form
-    //const addApplicationModal = new bootstrap.Modal(document.getElementById('add-application-modal'));
-    //const addApplicationForm = document.getElementById('add-application-form');
-    //const selectedCompanyIdInput = document.getElementById('selected-company-id');
-
-    // Function to open the "Add Application" modal for a specific company
-    window.openAddApplicationModal = (companyId) => {
-        selectedCompanyIdInput.value = companyId; // Set the selected company ID
-        jobTitleInput.value = '';
-        applicationDateInput.value = '';
-        statusInput.value = 'applied';
-        notesInput.value = '';
-    };
-    applicationForm.addEventListener('submit', async (e) => {
-        e.preventDefault();
-
-        const formData = new FormData();
-        formData.append('jobTitle', jobTitleInput.value.trim());
-        formData.append('applicationDate', applicationDateInput.value.trim());
-        formData.append('status', statusInput.value.trim());
-        formData.append('notes', notesInput.value.trim());
-        formData.append('companyId', companyDropdown.value.trim());
-        if (document.getElementById('attachment').files[0]) {
-            formData.append('attachment', document.getElementById('attachment').files[0]);
-        }
-
-        try {
-            const response = await fetch('/api/v1/applications', {
-                method: 'POST',
-                headers: {
-                    'Authorization': `Bearer ${localStorage.getItem('token')}`,
-                },
-                body: formData,
-            });
-
-            if (!response.ok) {
-                const errorData = await response.json();
-                throw new Error(errorData.error || 'Failed to save application');
-            }
-
-            alert('Application saved successfully');
-            applicationModal.hide();
-            loadApplications(); // Reload applications if needed
-        } catch (err) {
-            console.error('Error saving application:', err.message);
-            alert('Error saving application: ' + err.message);
-        }
-    });
-
-    // Reference to the "Add Application" modal and form
-    //const addApplicationModal = new bootstrap.Modal(document.getElementById('add-application-modal'));
-    //const addApplicationForm = document.getElementById('add-application-form');
-    //const selectedCompanyIdInput = document.getElementById('selected-company-id');
-
-    // Function to open the "Add Application" modal for a specific company
-    window.openAddApplicationModal = (companyId) => {
-        selectedCompanyIdInput.value = companyId; // Set the selected company ID
-        jobTitleInput.value = '';
-        applicationDateInput.value = '';
-        statusInput.value = 'applied';
-        notesInput.value = '';
-    };
-
-    // Handle "Add Application" form submission
-    // addApplicationForm.addEventListener('submit', async (e) => {
-    //     e.preventDefault();
-
-    //     // Capture form values
-    //     const jobTitle = jobTitleInput.value.trim();
-    //     const applicationDate = applicationDateInput.value.trim();
-    //     const status = statusInput.value.trim();
-    //     const notes = notesInput.value.trim();
-    //     const companyId = selectedCompanyIdInput.value.trim(); // Get the selected company ID from the hidden input
-
-    //     // Debugging: Log the captured values
-    //     console.log('Form values:', { jobTitle, applicationDate, status, notes, companyId });
-
-    //     // Validate input fields
-    //     if (!jobTitle || !applicationDate || !status || !companyId) {
-    //         alert('Please fill in all required fields.');
-    //         return;
-    //     }
-
-    //     try {
-    //         const response = await fetch('/api/v1/applications', {
-    //             method: 'POST',
-    //             headers: {
-    //                 'Content-Type': 'application/json',
-    //                 'Authorization': `Bearer ${localStorage.getItem('token')}`,
-    //             },
-    //             body: JSON.stringify({ jobTitle, applicationDate, status, notes, companyId }),
-    //         });
-
-    //         if (!response.ok) {
-    //             const errorData = await response.json();
-    //             throw new Error(errorData.error || 'Failed to save application');
-    //         }
-
-    //         alert('Application saved successfully');
-    //         loadApplications(); // Reload applications if needed
-    //     } catch (err) {
-    //         console.error('Error saving application:', err.message);
-    //         alert('Error saving application: ' + err.message);
-    //     }
-    // });
-
-    // Fetch and display applications
-    async function loadApplications() {
-        try {
-            const response = await fetch('/api/v1/applications', {
-                method: 'GET',
-                headers: {
-                    'Authorization': `Bearer ${localStorage.getItem('token')}`,
-                },
-            });
-
-            if (!response.ok) {
-                throw new Error('Failed to fetch applications');
-            }
-
-            const applications = await response.json();
-
-            const applicationsList = document.getElementById('applications-list');
-            applicationsList.innerHTML = applications.map((application, index) => `
-                <tr>
-                    <td>${index + 1}</td>
-                    <td>${application.jobTitle}</td>
-                    <td>${application.Company?.name || 'N/A'}</td>
-                    <td>${new Date(application.applicationDate).toLocaleDateString()}</td>
-                    <td>${application.status}</td>
-                    <td>${application.notes || 'N/A'}</td>
-                    <td>
-                        ${application.filePath 
-                            ? `<a href="/${application.filePath}" target="_blank" class="btn btn-sm btn-info">View</a>` 
-                            : 'No Attachment'}
-                    </td>
-                    <td>
-                        <button class="btn btn-warning btn-sm" onclick="editApplication(${application.id})">Edit</button>
-                        <button class="btn btn-danger btn-sm" onclick="deleteApplication(${application.id})">Delete</button>
-                    </td>
-                </tr>
-            `).join('');
-        } catch (err) {
-            console.error('Error loading applications:', err.message);
-            alert('Error loading applications');
-        }
-    }
 
     // Edit Application
-    window.editApplication = async (id) => {
+    window.editApplication = async (_id) => {
         try {
-            const response = await fetch(`/api/v1/applications/${id}`, {
+            const response = await fetch(`/api/v1/applications/${_id}`, {
                 method: 'GET',
                 headers: {
                     'Authorization': `Bearer ${localStorage.getItem('token')}`,
@@ -688,8 +543,8 @@ document.addEventListener('DOMContentLoaded', async () => {
             applicationDateInput.value = new Date(application.applicationDate).toISOString().split('T')[0];
             statusInput.value = application.status;
             notesInput.value = application.notes || '';
-            companyDropdown.value = application.companyId || '';
 
+            console.log('Editing Application.');
             applicationModal.show();
         } catch (err) {
             console.error(err.message);
@@ -697,14 +552,54 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     };
 
+    async function loadApplications() {
+        try {
+            const response = await fetch('/api/v1/applications', {
+                method: 'GET',
+                headers: {
+                    'Authorization': `Bearer ${localStorage.getItem('token')}`, // Include token if required
+                },
+            });
+
+            if (!response.ok) {
+                throw new Error('Failed to fetch applications');
+            }
+
+            const applications = await response.json();
+
+            const applicationsList = document.getElementById('applications-list');
+            applicationsList.innerHTML = applications.map((application, index) => `
+                <tr>
+                    <td>${index + 1}</td>
+                    <td>${application.jobTitle}</td>
+                    <td>${new Date(application.applicationDate).toLocaleDateString()}</td>
+                    <td>${application.status}</td>
+                    <td>${application.notes || 'N/A'}</td>
+                    <td>
+                        ${application.filePath 
+                            ? `<a href="/${application.filePath}" target="_blank" class="btn btn-sm btn-info">View</a>` 
+                            : 'No Attachment'}
+                    </td>
+                    <td>
+                       <button class="btn btn-warning btn-sm" onclick="editApplication('${application._id}')">Edit</button>
+                       <button class="btn btn-danger btn-sm" onclick="deleteApplication('${application._id}')">Delete</button>
+                    </td>
+                </tr>
+            `).join('');
+        } catch (err) {
+            console.error('Error loading applications:', err.message);
+            alert('Error loading applications');
+        }
+    }
+
     // Delete Application
-    window.deleteApplication = async (id) => {
+    window.deleteApplication = async (_id) => {
         if (!confirm('Are you sure you want to delete this application?')) {
             return;
         }
 
         try {
-            const response = await fetch(`/api/v1/applications/${id}`, {
+            const response = await fetch(`/api/v1/applications/${_id}`, {
                 method: 'DELETE',
                 headers: {
                     'Authorization': `Bearer ${localStorage.getItem('token')}`,

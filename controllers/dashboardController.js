@@ -2,7 +2,7 @@ const Application = require('../models/application');
 
 exports.getDashboard = async (req, res) => {
     try {
-        const applications = await Application.findAll({
+        const applications = await Application.findAllByUser({
             where: { userId: req.user.userId },
             attributes: ['id', 'jobTitle', 'applicationDate', 'status', 'filePath'], // Include filePath
         });
