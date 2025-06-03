@@ -1,87 +1,37 @@
-const { ObjectId } = require('mongodb');
-const getdb = require('../config/db').getdb;
+const mongoose = require('mongoose');
+const Schema = mongoose.Schema;
 
-class Company {
-  constructor(name, contactDetails, size, industry, notes) {
-    this.name = name;
-    this.contactDetails = contactDetails;
-    this.size = size;
-    this.industry = industry;
-    this.notes = notes;
-  }
+const CompanySchema = new Schema({
+  name: { type: String, required: true },
+  contactDetails: { type: String, required: true},
+  size: { type: String, default: '' }, 
+  industry: { type: String, default: '' },
+  notes: { type: String, default: '' }
+});
 
-  async save() {
-    const db = getdb();
-    try {
-      const result = await db.collection('companies').insertOne(this);
-      return result.ops?.[0] || { insertedId: result.insertedId, ...this };
-    } catch (err) {
-      console.error('Error saving company:', err.message);
-      throw err;
-    }
-  }
+// Static: Create a company
+CompanySchema.statics.createCompany = function(data) {
+  return this.create(data);
+};
 
-  static async create(data) {
-    const company = new Company(
-      data.name,
-      data.contactDetails,
-      data.size,
-      data.industry,
-      data.notes
-    );
-    return await company.save();
-  }
+// Static: Find all companies
+CompanySchema.statics.findAll = function() {
+  return this.find();
+};
 
-  static async findByPk(id) {
-    const db = getdb();
-    try {
-      const company = await db.collection('companies').findOne({ _id: new ObjectId(id) });
-      return company;
-    } catch (err) {
-      console.error('Error fetching company by ID:', err.message);
-      throw err;
-    }
-  }
+// Static: Find company by ID
+CompanySchema.statics.findByIdCustom = function(id) {
+  return this.findById(id);
+};
 
-  static async updateById(id, updateData) {
-    const db = getdb();
-    const result = await db.collection('companies').updateOne(
-        { _id: id },
-        { $set: updateData }
-    );
-    return result.matchedCount > 0;
-}
+// Static: Update company by ID
+CompanySchema.statics.updateById = function(id, updateData) {
+  return this.findByIdAndUpdate(id, updateData, { new: true });
+};
 
-  static async deleteById(id) {
-    const db = getdb();
-    try {
-      const result = await db.collection('companies').deleteOne({ _id: new ObjectId(id) });
-      if (result.deletedCount === 0) {
-        throw new Error('No company found with the given ID');
-      }
-      return result;
-    } catch (err) {
-      console.error('Error deleting company:', err.message);
-      throw err;
-    }
-  }
+// Static: Delete company by ID
+CompanySchema.statics.deleteById = function(id) {
+  return this.findByIdAndDelete(id);
+};
 
-  static async findAll() {
-    const db = getdb();
-    try {
-      const companies = await db.collection('companies').find({}).project({
-        name: 1,
-        contactDetails: 1,
-        size: 1,
-        industry: 1,
-        notes: 1,
-      }).toArray();
-      return companies;
-    } catch (err) {
-      console.error('Error fetching companies:', err.message);
-      throw err;
-    }
-  }
-}
-
-module.exports = Company;
+module.exports = mongoose.model('Company', CompanySchema);

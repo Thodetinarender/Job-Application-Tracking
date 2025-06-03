@@ -1,5 +1,5 @@
 const bcrypt = require('bcryptjs');
-const User = require('../models/user');
+const User = require("../models/user");
 const jwtServices = require("../services/jwtService");
 
 // Signup
@@ -11,7 +11,7 @@ exports.signUp = async (req, res) => {
       return res.status(403).json({ message: "User already exists, Please login!" });
     }
     const hash = await bcrypt.hash(password, 10);
-    const user = new User(name, email, hash, phone);
+    const user = new User({name, email, password:hash, phone});
     await user.save();
     res.status(201).json({ success: true, message: "New user created." });
   } catch (err) {

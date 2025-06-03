@@ -6,11 +6,12 @@ const authRoutes = require('./routes/authRoutes');
 const companyRoutes = require('./routes/companyRoutes');
 const applicationRoutes = require('./routes/applicationRoutes');
 const reminderRoutes = require('./routes/reminderRoutes');
-const noteRoutes = require('./routes/noteRoutes');
+// const noteRoutes = require('./routes/noteRoutes');
 const dashboardRoutes = require('./routes/dashboardRoutes');
 const authMiddleware = require('./middlewares/authMiddleware');
 
-const mongoConnect = require('./config/db').mongoConnect; // Import MongoDB connection
+//const mongoConnect = require('./config/db').mongoConnect; // Import MongoDB connection
+const mongoose = require('mongoose');
 
 const app = express();
 
@@ -38,7 +39,7 @@ app.use('/api/v1/users', authRoutes);
 app.use('/api/v1/companies', authMiddleware, companyRoutes); // For company-related routes
 app.use('/api/v1/applications', authMiddleware, applicationRoutes); // Ensure this route is registered
 app.use('/api/v1/reminders', authMiddleware, reminderRoutes);
-app.use('/api/v1/notes', authMiddleware, noteRoutes);
+// app.use('/api/v1/notes', authMiddleware, noteRoutes);
 app.use('/api/v1/dashboard', authMiddleware, dashboardRoutes);
 
 process.on('uncaughtException', (err) => {
@@ -51,9 +52,55 @@ process.on('unhandledRejection', (reason, promise) => {
 });
 
 
-mongoConnect(client => {
-  console.log(client);
+// mongoConnect(client => {
+//   console.log(client);
+//   app.listen(process.env.PORT, () => {
+//     console.log(`Server running on port ${process.env.PORT}`);
+//   });
+// });
+
+mongoose.connect(
+  'mongodb+srv://narender:Narender123@cluster0.qbghm3r.mongodb.net/job_application?retryWrites=true&w=majority&appName=Cluster0'
+
+)
+.then(result =>{
+  console.log('Connected to Mongoose successfully');
   app.listen(process.env.PORT, () => {
     console.log(`Server running on port ${process.env.PORT}`);
   });
+})
+.catch(err =>{
+  console.error('Failed to connect to the database:', err.message);
 });
+
+
+
+// const mongodb = require('mongodb');
+// const MongoClient = mongodb.MongoClient;
+
+// let _db;
+
+// const mongoConnect = (callback) => {
+//     MongoClient.connect(
+//         'mongodb+srv://narender:Narender123@cluster0.qbghm3r.mongodb.net/job_application?retryWrites=true&w=majority&appName=Cluster0'
+//     )
+//         .then(client => {
+//             console.log('connected to database successfully');
+//            _db = client.db(); // Store the database connection
+//             callback();
+//         })
+//         .catch(err => {
+//             console.error('Failed to connect to the database:', err.message);
+//             throw err;
+//         });
+// }
+
+// const getdb = () => {
+//     if (_db) {
+//         return _db;
+//     }
+//     throw new Error('No database found! Please connect first.');
+// };
+
+// exports.mongoConnect = mongoConnect;
+// exports.getdb = getdb;

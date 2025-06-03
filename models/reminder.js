@@ -1,44 +1,30 @@
-const getdb = require('../config/db').getdb;
+const mongoose = require('mongoose');
+const Schema = mongoose.Schema;
 
-class reminder {
-  constructor(reminderDate, applicationId) {
-    this.reminderDate = reminderDate;
-    this.applicationId = applicationId;
-  }
+const ReminderSchema = new Schema({
+  reminderDate: { type: Date, required: true },
+  applicationId: { type: Schema.Types.ObjectId, ref: 'Application', required: true },
+  userId: { type: String, required: true }
+});
 
-  async save() {
-    const db = getdb();
-    try {
-      const result = await db.collection('reminders').insertOne(this);
-      return result.ops?.[0] || { insertedId: result.insertedId, ...this };
-    } catch (err) {
-      console.error('Error saving reminder:', err.message);
-      throw err;
-    }
-  }
+// Static: Create a reminder
+ReminderSchema.statics.createReminder = function(data) {
+  return this.create(data);
+};
 
-  static async findByApplicationId(applicationId) {
-    const db = getdb();
-    try {
-      const reminders = await db.collection('reminders').find({ applicationId }).toArray();
-      return reminders;
-    } catch (err) {
-      console.error('Error fetching reminders by application ID:', err.message);
-      throw err;
-    }
-  }
+// Static: Find all reminders for a user
+ReminderSchema.statics.findByUser = function(userId) {
+  return this.find({ userId });
+};
 
-  
-  static async find() {
-    const db = getdb();
-    try {
-      const reminders = await db.collection('reminders').find({}).toArray();
-      return reminders;
-    } catch (err) {
-      console.error('Error fetching reminders:', err.message);
-      throw err;
-    }
-  }
-}
+// Static: Find reminder by ID
+ReminderSchema.statics.findByReminderId = function(id) {
+  return this.findById(id);
+};
 
-module.exports = reminder;
+// Static: Delete reminder by ID
+ReminderSchema.statics.deleteById = function(id) {
+  return this.findByIdAndDelete(id);
+};
+
+module.exports = mongoose.model('Reminder', ReminderSchema);

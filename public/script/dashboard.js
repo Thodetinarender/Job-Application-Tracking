@@ -298,7 +298,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                     <td>${reminder.reminderDate}</td>
                     <td>${reminder.applicationId}</td>
                     <td>
-                        <button class="btn btn-danger btn-sm" onclick="deleteReminder(${reminder.id})">Delete</button>
+                        <button class="btn btn-danger btn-sm" onclick="deleteReminder('${reminder._id}')">Delete</button>
                     </td>
                 </tr>
             `).join('');
@@ -398,7 +398,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
             // Populate the dropdown with valid application IDs
             applicationIdInput.innerHTML = applications.map(app => `
-                <option value="${app._id}">(ID: ${app._id})</option>
+                <option value="${app._id}">${app.jobTitle} (ID: ${app._id})</option>
             `).join('');
         } catch (err) {
             console.error(err.message);
@@ -466,7 +466,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     document.getElementById('add-application-btn').addEventListener('click', () => {
         jobTitleInput.value = '';
         applicationDateInput.value = '';
-        statusInput.value = 'applied';
+        statusInput.value = 'Applied';
         notesInput.value = '';
         applicationModal.show();
     });
